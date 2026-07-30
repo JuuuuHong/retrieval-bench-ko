@@ -62,12 +62,14 @@ class DenseRetriever(Retriever):
         # 모델 로드(수 초)가 일어나 쿼리 레이턴시를 오염시키는 문제 방지
         _ = self.model
         self.doc_ids = list(corpus.keys())
+        self.index_cache_hit = False
         cache = self._cache_key(corpus)
         if cache.exists():
             data = np.load(cache, allow_pickle=False)
             # 캐시의 문서 순서를 그대로 따른다
             self.doc_ids = list(data["doc_ids"])
             self._emb = data["emb"]
+            self.index_cache_hit = True
             return
 
         self.cache_dir.mkdir(parents=True, exist_ok=True)

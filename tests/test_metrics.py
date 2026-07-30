@@ -12,6 +12,7 @@ from retrieval_bench.eval.metrics import (
     aggregate,
     mrr_at_k,
     ndcg_at_k,
+    per_query_metrics,
     recall_at_k,
 )
 
@@ -91,3 +92,17 @@ class TestAggregate:
         # 중복을 허용하면 nDCG가 1을 초과한다 (예: ['a','a','a'] -> 1.3066)
         with pytest.raises(ValueError, match="중복"):
             aggregate({"q1": ["a", "a"]}, {"q1": {"a"}}, k_values=[1])
+
+
+class TestPerQueryMetrics:
+    def test_쿼리별_값이_집계와_일치(self):
+        runs = {"q1": ["a", "x"], "q2": ["y", "b"]}
+        qrels = {"q1": {"a"}, "q2": {"b"}}
+        pq = per_query_metrics(runs, qrels, k_values=[1, 2])
+        assert pq["q1"]["recall@1"] == 1.0
+        assert pq["q2"]["recall@1"] == 0.0
+        assert pq["q2"]["recall@2"] == 1.0
+        agg = aggregate(runs, qrels, k_values=[1, 2])
+        assert agg["recall@1"] == pytest.approx(
+            (pq["q1"]["recall@1"] + pq["q2"]["recall@1"]) / 2
+        )

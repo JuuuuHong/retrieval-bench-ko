@@ -36,3 +36,14 @@ class TestRrfFuse:
         r1 = rrf_fuse([["x", "y"], ["y", "x"]])
         r2 = rrf_fuse([["y", "x"], ["x", "y"]])
         assert [d for d, _ in r1] == [d for d, _ in r2]
+
+    def test_가중치_수계산(self):
+        # a: 1번 검색기 1위(w=1) -> 1/61, b: 2번 검색기 1위(w=3) -> 3/61
+        result = rrf_fuse([["a"], ["b"]], rrf_k=60, weights=[1.0, 3.0])
+        assert result[0][0] == "b"
+        assert result[0][1] == pytest.approx(3 / 61)
+        assert result[1][1] == pytest.approx(1 / 61)
+
+    def test_가중치_수_불일치는_에러(self):
+        with pytest.raises(ValueError):
+            rrf_fuse([["a"], ["b"]], weights=[1.0])

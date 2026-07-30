@@ -28,7 +28,7 @@ from tqdm import tqdm
 
 from retrieval_bench.data.miracl import load_miracl_ko
 from retrieval_bench.eval.cost import mean_topk_tokens
-from retrieval_bench.eval.metrics import aggregate
+from retrieval_bench.eval.metrics import aggregate, per_query_metrics
 from retrieval_bench.report.markdown import metrics_table
 from retrieval_bench.retrievers.bm25 import BM25Retriever
 from retrieval_bench.tokenizers import get_tokenizer
@@ -61,6 +61,7 @@ def _build_one(r: dict):
             components=[_build_one(c) for c in r["components"]],
             rrf_k=r.get("rrf_k", 60),
             candidate_k=r.get("candidate_k", 1000),
+            weights=r.get("weights"),
         )
     raise ValueError(f"지원하지 않는 retriever: {r['type']}")
 
@@ -146,6 +147,7 @@ def main() -> None:
         latencies.append((time.perf_counter() - t0) * 1000)
         runs[qid] = [doc_id for doc_id, _ in results]
 
+    per_query = per_query_metrics(runs, dataset.qrels, k_values)
     metrics = aggregate(runs, dataset.qrels, k_values)
     metrics["latency_p50_ms"] = percentile(latencies, 50)
     metrics["latency_p95_ms"] = percentile(latencies, 95)
@@ -155,6 +157,9 @@ def main() -> None:
     metrics[f"tokens@{cost_k}"] = mean_topk_tokens(eval_runs, dataset.corpus, cost_k)
 
     timestamp = datetime.now(timezone.utc)
+    # dense는 임베딩 캐시 히트 시 index_sec이 np.load 시간(~0.1s)이라
+    # 실제 인코딩 비용과 100배 차이 — 플래그 없이는 오독을 유발한다
+    cache_hit = getattr(retriever, "index_cache_hit", None)
     out = {
         "experiment": experiment,
         "timestamp": timestamp.isoformat(),
@@ -162,7 +167,9 @@ def main() -> None:
         "corpus_size": len(dataset.corpus),
         "dataset_stats": dataset.stats,
         "index_sec": index_sec,
+        "index_cache_hit": cache_hit,
         "metrics": metrics,
+        "per_query": per_query,
         **_git_info(),
         "versions": _versions(),
     }

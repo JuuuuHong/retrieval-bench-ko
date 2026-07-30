@@ -1,0 +1,25 @@
+# 가중 RRF: "약한 검색기가 상위권을 끌어내린다"는 진단의 처방 검증
+# dense에 3배 가중 — 무가중(k=60) 대비 상위 순위 회복 여부를 본다
+experiment: hybrid_rrf_weighted
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: rrf
+  rrf_k: 60
+  candidate_k: 1000
+  weights: [1.0, 3.0]   # [bm25, dense]
+  components:
+    - type: bm25
+      tokenizer: kiwi
+      k1: 0.9
+      b: 0.4
+    - type: dense
+      model: intfloat/multilingual-e5-small
+      query_prefix: "query: "
+      passage_prefix: "passage: "
+      batch_size: 64
+eval:
+  k: [1, 5, 10, 100]

@@ -38,16 +38,14 @@ def ndcg_at_k(ranked: list[str], relevant: set[str], k: int) -> float:
     return dcg / idcg if idcg > 0 else 0.0
 
 
-def aggregate(
+def per_query_metrics(
     runs: dict[str, list[str]],
     qrels: dict[str, set[str]],
     k_values: list[int],
-) -> dict[str, float]:
-    """전체 쿼리에 대한 메트릭 평균.
+) -> dict[str, dict[str, float]]:
+    """쿼리별 메트릭 — 신뢰구간·유의성 검정·오류 분석의 원재료.
 
-    runs: qid -> 검색 결과 문서 ID 리스트
-    qrels: qid -> 정답 문서 ID 집합
-    반환: {"recall@10": 0.83, "mrr@10": ..., "ndcg@10": ...}
+    집계값만 남기고 per-query를 버리면 사후 검정이 재실행 없이는 불가능해진다.
     """
     qids = [qid for qid in runs if qrels.get(qid)]
     if not qids:
@@ -59,16 +57,33 @@ def aggregate(
         if len(set(runs[qid])) != len(runs[qid]):
             raise ValueError(f"검색 결과에 중복 문서 ID: qid={qid}")
 
+    out: dict[str, dict[str, float]] = {}
+    for qid in qids:
+        m: dict[str, float] = {}
+        for k in k_values:
+            m[f"recall@{k}"] = recall_at_k(runs[qid], qrels[qid], k)
+            m[f"mrr@{k}"] = mrr_at_k(runs[qid], qrels[qid], k)
+            m[f"ndcg@{k}"] = ndcg_at_k(runs[qid], qrels[qid], k)
+        out[qid] = m
+    return out
+
+
+def aggregate(
+    runs: dict[str, list[str]],
+    qrels: dict[str, set[str]],
+    k_values: list[int],
+) -> dict[str, float]:
+    """전체 쿼리에 대한 메트릭 평균.
+
+    runs: qid -> 검색 결과 문서 ID 리스트
+    qrels: qid -> 정답 문서 ID 집합
+    반환: {"recall@10": 0.83, "mrr@10": ..., "ndcg@10": ...}
+    """
+    per_query = per_query_metrics(runs, qrels, k_values)
+    qids = list(per_query)
     result: dict[str, float] = {}
     for k in k_values:
-        result[f"recall@{k}"] = sum(
-            recall_at_k(runs[q], qrels[q], k) for q in qids
-        ) / len(qids)
-        result[f"mrr@{k}"] = sum(
-            mrr_at_k(runs[q], qrels[q], k) for q in qids
-        ) / len(qids)
-        result[f"ndcg@{k}"] = sum(
-            ndcg_at_k(runs[q], qrels[q], k) for q in qids
-        ) / len(qids)
+        for name in (f"recall@{k}", f"mrr@{k}", f"ndcg@{k}"):
+            result[name] = sum(per_query[q][name] for q in qids) / len(qids)
     result["num_queries"] = len(qids)
     return result

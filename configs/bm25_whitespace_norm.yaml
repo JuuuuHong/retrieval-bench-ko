@@ -1,0 +1,14 @@
+# 통제 조건: 공백 분리 + 구두점 제거 — "형태소 효과"에서 구두점 정규화 몫을 분리
+experiment: bm25_whitespace_norm
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: bm25
+  tokenizer: whitespace_norm
+  k1: 0.9
+  b: 0.4
+eval:
+  k: [1, 5, 10, 100]
