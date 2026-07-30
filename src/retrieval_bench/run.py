@@ -26,15 +26,35 @@ from retrieval_bench.retrievers.bm25 import BM25Retriever
 from retrieval_bench.tokenizers import get_tokenizer
 
 
-def build_retriever(cfg: dict):
-    r = cfg["retriever"]
+def _build_one(r: dict):
     if r["type"] == "bm25":
         return BM25Retriever(
             tokenizer=get_tokenizer(r.get("tokenizer", "whitespace")),
             k1=r.get("k1", 0.9),
             b=r.get("b", 0.4),
         )
+    if r["type"] == "dense":
+        from retrieval_bench.retrievers.dense import DenseRetriever
+
+        return DenseRetriever(
+            model_name=r["model"],
+            query_prefix=r.get("query_prefix", ""),
+            passage_prefix=r.get("passage_prefix", ""),
+            batch_size=r.get("batch_size", 64),
+        )
+    if r["type"] == "rrf":
+        from retrieval_bench.retrievers.rrf import RRFRetriever
+
+        return RRFRetriever(
+            components=[_build_one(c) for c in r["components"]],
+            rrf_k=r.get("rrf_k", 60),
+            candidate_k=r.get("candidate_k", 1000),
+        )
     raise ValueError(f"지원하지 않는 retriever: {r['type']}")
+
+
+def build_retriever(cfg: dict):
+    return _build_one(cfg["retriever"])
 
 
 def main() -> None:

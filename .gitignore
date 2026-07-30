@@ -4,4 +4,5 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 results/*.json
+.cache/
 .DS_Store

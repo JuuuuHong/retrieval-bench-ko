@@ -1,0 +1,16 @@
+# 벡터 검색 단독: multilingual-e5-small
+# (BGE-M3 대비 가볍고 빨라 반복 실험용 기본값. 모델 축 비교는 config만 바꾸면 됨)
+experiment: dense_e5_small
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: dense
+  model: intfloat/multilingual-e5-small
+  query_prefix: "query: "     # E5 계열 필수 프리픽스
+  passage_prefix: "passage: "
+  batch_size: 64
+eval:
+  k: [1, 5, 10, 100]

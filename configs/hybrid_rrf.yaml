@@ -1,0 +1,23 @@
+# 하이브리드: BM25(형태소) + 벡터(e5-small)를 RRF로 융합
+experiment: hybrid_rrf
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: rrf
+  rrf_k: 60
+  candidate_k: 1000   # 각 검색기가 뽑는 후보 수
+  components:
+    - type: bm25
+      tokenizer: kiwi
+      k1: 0.9
+      b: 0.4
+    - type: dense
+      model: intfloat/multilingual-e5-small
+      query_prefix: "query: "
+      passage_prefix: "passage: "
+      batch_size: 64
+eval:
+  k: [1, 5, 10, 100]
