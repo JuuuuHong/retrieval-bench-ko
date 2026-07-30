@@ -1,0 +1,27 @@
+[project]
+name = "retrieval-bench-ko"
+version = "0.1.0"
+description = "한국어 하이브리드 검색의 구성요소별 품질·비용 기여도를 측정하는 재현 가능한 평가 하네스"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "rank-bm25>=0.2.2",
+    "datasets>=2.19",
+    "kiwipiepy>=0.17",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

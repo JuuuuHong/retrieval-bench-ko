@@ -1,0 +1,14 @@
+# 베이스라인: 공백 토큰화 BM25
+experiment: bm25_baseline
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000   # 정답+하드네거티브 풀에 무작위 문서를 채워 5만 건으로
+  seed: 42
+retriever:
+  type: bm25
+  tokenizer: whitespace
+  k1: 0.9
+  b: 0.4
+eval:
+  k: [1, 5, 10, 100]

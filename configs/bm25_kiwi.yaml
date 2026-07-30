@@ -1,0 +1,14 @@
+# 실험: 형태소 분석(Kiwi) 토큰화가 BM25 재현율에 미치는 영향
+experiment: bm25_kiwi
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: bm25
+  tokenizer: kiwi
+  k1: 0.9
+  b: 0.4
+eval:
+  k: [1, 5, 10, 100]
