@@ -44,13 +44,20 @@ def combined_table(
     ]
     for r in results:
         m = r["metrics"]
-        cells = [
-            f"{m[c]:.4f}" if isinstance(m.get(c), float) else str(m.get(c, "-"))
-            for c in columns
-        ]
+        cells = [_fmt(m.get(c)) for c in columns]
+        cs = r.get("corpus_size")
+        cs_str = f"{cs:,}" if isinstance(cs, int) else "-"
         lines.append(
-            f"| {r['experiment']} | {r.get('corpus_size', '-'):,} | "
-            + " | ".join(cells)
-            + " |"
+            f"| {r['experiment']} | {cs_str} | " + " | ".join(cells) + " |"
         )
     return "\n".join(lines)
+
+
+def _fmt(value) -> str:
+    if value is None:
+        return "-"
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, (int, float)):
+        return f"{value:.4f}"
+    return str(value)

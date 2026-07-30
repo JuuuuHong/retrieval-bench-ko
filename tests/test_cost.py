@@ -37,3 +37,8 @@ class TestMeanTopkTokens:
     def test_빈_runs면_에러(self):
         with pytest.raises(ValueError):
             mean_topk_tokens({}, {}, k=10)
+
+    def test_코퍼스에_없는_문서는_KeyError(self):
+        # 무음으로 0토큰 처리하면 망가진 검색기가 저렴해 보인다
+        with pytest.raises(KeyError):
+            mean_topk_tokens({"q1": ["ghost"]}, {"a": "가"}, k=1)

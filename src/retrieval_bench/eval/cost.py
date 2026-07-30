@@ -34,8 +34,10 @@ def mean_topk_tokens(
     """쿼리별 상위 k 문서 토큰 합의 평균 — 'LLM에 넣을 때 쿼리당 평균 비용'."""
     if not runs:
         raise ValueError("runs가 비어 있습니다")
+    # 코퍼스에 없는 문서는 조용히 0토큰 처리하지 않는다 — 망가진 검색기가
+    # "저렴해 보이는" 왜곡을 만들기 때문. KeyError를 그대로 전파한다.
     totals = [
-        sum(count_tokens(corpus[d]) for d in ranked[:k] if d in corpus)
+        sum(count_tokens(corpus[d]) for d in ranked[:k])
         for ranked in runs.values()
     ]
     return sum(totals) / len(totals)

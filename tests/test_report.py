@@ -33,3 +33,16 @@ class TestCombinedTable:
     def test_빈_입력은_에러(self):
         with pytest.raises(ValueError):
             combined_table([])
+
+    def test_corpus_size_없어도_크래시하지_않는다(self):
+        table = combined_table(
+            [{"experiment": "a", "metrics": {"recall@10": 0.5}}],
+            columns=["recall@10"],
+        )
+        assert "| a | - | 0.5000 |" in table
+
+    def test_int_메트릭도_동일_포맷(self):
+        table = combined_table(
+            [_result("a", **{"recall@10": 1})], columns=["recall@10"]
+        )
+        assert "| 1.0000 |" in table

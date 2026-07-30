@@ -53,6 +53,12 @@ def aggregate(
     if not qids:
         raise ValueError("평가 가능한 쿼리가 없습니다 (qrels 매칭 0건)")
 
+    # 중복 문서 ID는 nDCG를 1 초과로 부풀린다 — 검색기 버그의 신호이므로
+    # 무음으로 계산하지 않고 즉시 실패시킨다
+    for qid in qids:
+        if len(set(runs[qid])) != len(runs[qid]):
+            raise ValueError(f"검색 결과에 중복 문서 ID: qid={qid}")
+
     result: dict[str, float] = {}
     for k in k_values:
         result[f"recall@{k}"] = sum(

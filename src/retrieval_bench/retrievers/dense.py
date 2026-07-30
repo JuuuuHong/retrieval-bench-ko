@@ -13,7 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
-from retrieval_bench.retrievers.base import Retriever
+from retrieval_bench.retrievers.base import Retriever, top_k_indices
 
 
 class DenseRetriever(Retriever):
@@ -43,14 +43,24 @@ class DenseRetriever(Retriever):
         return self._model
 
     def _cache_key(self, corpus: dict[str, str]) -> Path:
+        # 문서 ID뿐 아니라 텍스트도 해싱한다 — 텍스트 구성이 바뀌었는데
+        # (제목 포함 여부, 청킹 등) 옛 임베딩이 조용히 재사용되는 사고 방지.
+        # \x00/\x01 구분자는 ["ab","c"] vs ["a","bc"] 류의 키 충돌 방지.
         h = hashlib.sha1()
         h.update(self.model_name.encode())
+        h.update(b"\x00")
         h.update(self.passage_prefix.encode())
         for doc_id in sorted(corpus):
+            h.update(b"\x00")
             h.update(doc_id.encode())
+            h.update(b"\x01")
+            h.update(corpus[doc_id].encode())
         return self.cache_dir / f"emb_{h.hexdigest()[:16]}.npz"
 
     def index(self, corpus: dict[str, str]) -> None:
+        # 모델 로드를 인덱싱 단계로 고정 — 캐시 히트 시 첫 search()에서
+        # 모델 로드(수 초)가 일어나 쿼리 레이턴시를 오염시키는 문제 방지
+        _ = self.model
         self.doc_ids = list(corpus.keys())
         cache = self._cache_key(corpus)
         if cache.exists():
@@ -60,6 +70,7 @@ class DenseRetriever(Retriever):
             self._emb = data["emb"]
             return
 
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
         texts = [self.passage_prefix + corpus[d] for d in self.doc_ids]
         self._emb = self.model.encode(
             texts,
@@ -67,7 +78,6 @@ class DenseRetriever(Retriever):
             normalize_embeddings=True,
             show_progress_bar=True,
         ).astype(np.float32)
-        self.cache_dir.mkdir(exist_ok=True)
         np.savez(cache, doc_ids=np.array(self.doc_ids), emb=self._emb)
 
     def search(self, query: str, k: int) -> list[tuple[str, float]]:
@@ -77,9 +87,7 @@ class DenseRetriever(Retriever):
             [self.query_prefix + query], normalize_embeddings=True
         ).astype(np.float32)[0]
         scores = self._emb @ q
-        if k < len(scores):
-            top = np.argpartition(scores, -k)[-k:]
-            top = top[np.argsort(scores[top])[::-1]]
-        else:
-            top = np.argsort(scores)[::-1]
+        # BM25와 동일한 top-k 선택 경로 — 레이턴시 비교에서 선택 알고리즘
+        # 차이(argpartition vs 전체 정렬)가 교란변수가 되지 않도록 통일
+        top = top_k_indices(scores, k)
         return [(self.doc_ids[i], float(scores[i])) for i in top]

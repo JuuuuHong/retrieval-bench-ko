@@ -21,7 +21,11 @@ def make_kiwi_tokenizer() -> Tokenizer:
     kiwi = Kiwi()
 
     def tokenize(text: str) -> list[str]:
-        return [token.form for token in kiwi.tokenize(text)]
+        # 소문자 폴딩을 whitespace_tokenizer와 동일하게 적용 —
+        # 두 토크나이저 비교가 "형태소 분석 유무" 단일 변수가 되도록
+        # (한국어 위키에는 IMF/DNA 등 로마자 표기가 흔해 대소문자 정책이
+        #  통제되지 않으면 비교가 교란된다)
+        return [token.form.lower() for token in kiwi.tokenize(text)]
 
     return tokenize
 

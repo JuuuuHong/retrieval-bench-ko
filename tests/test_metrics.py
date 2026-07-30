@@ -86,3 +86,8 @@ class TestAggregate:
     def test_매칭_0건이면_에러(self):
         with pytest.raises(ValueError):
             aggregate({"q1": ["a"]}, {}, k_values=[1])
+
+    def test_중복_문서_ID는_에러(self):
+        # 중복을 허용하면 nDCG가 1을 초과한다 (예: ['a','a','a'] -> 1.3066)
+        with pytest.raises(ValueError, match="중복"):
+            aggregate({"q1": ["a", "a"]}, {"q1": {"a"}}, k_values=[1])
