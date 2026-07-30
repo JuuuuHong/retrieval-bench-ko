@@ -1,0 +1,61 @@
+{
+  "experiment": "bm25_baseline",
+  "timestamp": "2026-07-30T16:52:22.732091+00:00",
+  "config": {
+    "experiment": "bm25_baseline",
+    "dataset": {
+      "name": "miracl-ko",
+      "split": "dev",
+      "corpus_sample": 50000,
+      "seed": 42
+    },
+    "retriever": {
+      "type": "bm25",
+      "tokenizer": "whitespace",
+      "k1": 0.9,
+      "b": 0.4
+    },
+    "eval": {
+      "k": [
+        1,
+        5,
+        10,
+        100
+      ]
+    }
+  },
+  "corpus_size": 50000,
+  "dataset_stats": {
+    "qrels_docs_missing_from_corpus": 0,
+    "queries_dropped": 0,
+    "queries_evaluated": 213
+  },
+  "index_sec": 1.081910999957472,
+  "metrics": {
+    "recall@1": 0.24357627244951188,
+    "mrr@1": 0.38028169014084506,
+    "ndcg@1": 0.38028169014084506,
+    "recall@5": 0.3699682946161819,
+    "mrr@5": 0.44507042253521123,
+    "ndcg@5": 0.366287553919001,
+    "recall@10": 0.4514612930105888,
+    "mrr@10": 0.45556673373574785,
+    "ndcg@10": 0.3910594069048037,
+    "recall@100": 0.6720694537595946,
+    "mrr@100": 0.4630608194438685,
+    "ndcg@100": 0.45587286126802806,
+    "num_queries": 213,
+    "latency_p50_ms": 42.54758299794048,
+    "latency_p95_ms": 92.74995804298669,
+    "tokens@10": 1549.5258215962442
+  },
+  "git_sha": "5541ef722a9f6d58465f2c17b1b750722f69ba13",
+  "git_dirty": false,
+  "versions": {
+    "numpy": "2.5.1",
+    "rank-bm25": "0.2.2",
+    "kiwipiepy": "0.23.2",
+    "tiktoken": "0.13.0",
+    "datasets": "5.0.1"
+  }
+}

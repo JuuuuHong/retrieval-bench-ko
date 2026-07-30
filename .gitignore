@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 *.egg-info/
 .pytest_cache/
-results/*.json
+# 최신 결과(results/*.json)는 커밋한다 — README 표의 근거를 리포에 남기기 위함.
+# 실행 히스토리는 로컬 전용.
+results/history/
 .cache/
 .DS_Store
