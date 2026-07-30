@@ -1,0 +1,23 @@
+# 3주차 스윕: rrf_k 민감도 — 큰 k는 순위차 영향을 평탄화
+experiment: hybrid_rrf_k240
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: rrf
+  rrf_k: 240
+  candidate_k: 1000
+  components:
+    - type: bm25
+      tokenizer: kiwi
+      k1: 0.9
+      b: 0.4
+    - type: dense
+      model: intfloat/multilingual-e5-small
+      query_prefix: "query: "
+      passage_prefix: "passage: "
+      batch_size: 64
+eval:
+  k: [1, 5, 10, 100]

@@ -10,6 +10,8 @@ dependencies = [
     "datasets>=2.19",
     "kiwipiepy>=0.17",
     "tqdm>=4.66",
+    "sentence-transformers>=3.0",
+    "tiktoken>=0.7",
 ]
 
 [project.optional-dependencies]
