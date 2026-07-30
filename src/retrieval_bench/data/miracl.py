@@ -67,9 +67,11 @@ def load_miracl_ko(
     }
 
     # 코퍼스 풀: 판정 문서 + 무작위 distractor
+    # 주의: set 순회는 해시 랜덤화로 프로세스마다 순서가 달라져 동점 문서의
+    # 정렬 순서(argsort 안정성)가 흔들린다 → 정렬해서 코퍼스 순서를 고정
     corpus: dict[str, str] = {}
     docid_to_idx = {str(d): i for i, d in enumerate(corpus_ds["_id"])}
-    for docid in judged_docids:
+    for docid in sorted(judged_docids):
         idx = docid_to_idx.get(docid)
         if idx is not None:
             corpus[docid] = _doc_text(corpus_ds[idx])
