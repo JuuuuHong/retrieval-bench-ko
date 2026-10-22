@@ -1,0 +1,16 @@
+experiment: sqa_full_bm25kiwi
+dataset:
+  name: ko-strategyqa
+  split: dev
+retriever:
+  type: bm25
+  tokenizer: kiwi
+  k1: 0.9
+  b: 0.4
+eval:
+  k:
+  - 1
+  - 5
+  - 10
+  - 100
+  save_runs: 1000

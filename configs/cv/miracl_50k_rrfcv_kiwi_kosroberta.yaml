@@ -1,0 +1,14 @@
+# 가중치·rrf_k를 5-fold 교차검증으로 고른 RRF — 보고 수치는 out-of-fold
+experiment: miracl_50k_rrfcv_kiwi_kosroberta
+components:
+- .cache/runs/miracl_50k_bm25kiwi.json.gz
+- .cache/runs/miracl_50k_kosroberta.json.gz
+folds: 5
+seed: 0
+objective: recall@10
+tiebreak: ndcg@10
+k:
+- 1
+- 5
+- 10
+- 100

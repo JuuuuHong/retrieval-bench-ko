@@ -1,0 +1,9 @@
+experiment: probe_qwen1.5B
+dataset: {name: miracl-ko, split: dev, corpus_sample: 50000, seed: 42}
+generator: Qwen/Qwen2.5-1.5B-Instruct
+n_ctx: 5
+max_chars: 600
+max_new_tokens: 160
+retrieved:
+  e5small: .cache/runs/miracl_50k_e5small.json.gz
+negatives_only: true

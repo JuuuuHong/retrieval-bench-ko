@@ -66,6 +66,42 @@ def _build_one(r: dict):
     raise ValueError(f"지원하지 않는 retriever: {r['type']}")
 
 
+def load_dataset_from_cfg(d: dict):
+    """config의 dataset 블록 → RetrievalDataset.
+
+    config에 적힌 이름이 결과 JSON에 그대로 남으므로, 모르는 이름을 다른
+    데이터셋으로 무음 대체하지 않고 즉시 실패한다.
+    """
+    if d["name"] == "miracl-ko":
+        return load_miracl_ko(
+            split=d["split"],
+            corpus_sample=d.get("corpus_sample", 0),
+            seed=d.get("seed", 42),
+        )
+    if d["name"] == "ko-strategyqa":
+        if d.get("corpus_sample"):
+            raise ValueError("ko-strategyqa는 코퍼스 전체(9,251건)만 지원한다")
+        from retrieval_bench.data.strategyqa import load_ko_strategyqa
+
+        return load_ko_strategyqa(split=d["split"])
+    raise ValueError(
+        f"지원하지 않는 데이터셋: {d['name']} (miracl-ko | ko-strategyqa)"
+    )
+
+
+def save_runs(path: Path, runs: dict[str, list[str]], meta: dict) -> None:
+    """검색기의 쿼리별 순위 리스트를 저장 — 융합 가중치 교차검증(fusion_cv)의 입력.
+
+    RRF 하이퍼파라미터 탐색마다 BM25·dense 검색을 다시 돌리지 않도록,
+    구성 검색기의 상위 N 순위를 한 번만 계산해 둔다.
+    """
+    import gzip
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with gzip.open(path, "wt", encoding="utf-8") as f:
+        json.dump({"meta": meta, "runs": runs}, f, ensure_ascii=False)
+
+
 def build_retriever(cfg: dict):
     return _build_one(cfg["retriever"])
 
@@ -112,19 +148,13 @@ def main() -> None:
     cost_k = cfg["eval"].get("cost_k", 10)
     # 토큰 비용은 검색 결과에서 계산하므로 검색 깊이가 cost_k를 덮어야 한다
     max_k = max(max(k_values), cost_k)
+    # save_runs: 융합 교차검증용으로 상위 N 순위를 저장(기본 0 = 저장 안 함).
+    # 검색 깊이만 늘고 메트릭은 k별 상위만 보므로 품질 수치는 그대로다.
+    runs_depth = cfg["eval"].get("save_runs", 0)
+    search_k = max(max_k, runs_depth)
 
-    d = cfg["dataset"]
-    if d["name"] != "miracl-ko":
-        raise ValueError(
-            f"지원하지 않는 데이터셋: {d['name']} (현재 miracl-ko만 지원) — "
-            "config에 적힌 이름이 결과 JSON에 박제되므로 무음 대체는 하지 않는다"
-        )
-    print(f"[{experiment}] 데이터셋 로드 중: {d['name']} ({d['split']})", flush=True)
-    dataset = load_miracl_ko(
-        split=d["split"],
-        corpus_sample=d.get("corpus_sample", 0),
-        seed=d.get("seed", 42),
-    )
+    print(f"[{experiment}] 데이터셋 로드 중: {cfg['dataset']['name']}", flush=True)
+    dataset = load_dataset_from_cfg(cfg["dataset"])
     print(f"  쿼리 {len(dataset.queries)}건 / 코퍼스 {len(dataset.corpus)}건", flush=True)
 
     retriever = build_retriever(cfg)
@@ -137,13 +167,13 @@ def main() -> None:
     # 레이턴시 분포 꼬리를 오염시키지 않도록 집계에서 제외
     warmup_query = next(iter(dataset.queries.values()))
     for _ in range(_WARMUP_SEARCHES):
-        retriever.search(warmup_query, k=max_k)
+        retriever.search(warmup_query, k=search_k)
 
     runs: dict[str, list[str]] = {}
     latencies: list[float] = []
     for qid, query in tqdm(dataset.queries.items(), desc="검색"):
         t0 = time.perf_counter()
-        results = retriever.search(query, k=max_k)
+        results = retriever.search(query, k=search_k)
         latencies.append((time.perf_counter() - t0) * 1000)
         runs[qid] = [doc_id for doc_id, _ in results]
 
@@ -155,6 +185,17 @@ def main() -> None:
     # 비용 분모를 품질 메트릭과 동일한 쿼리 집합(qrels 보유)으로 통일
     eval_runs = {q: r for q, r in runs.items() if dataset.qrels.get(q)}
     metrics[f"tokens@{cost_k}"] = mean_topk_tokens(eval_runs, dataset.corpus, cost_k)
+
+    if runs_depth:
+        runs_path = Path(".cache/runs") / f"{experiment}.json.gz"
+        save_runs(
+            runs_path,
+            {q: r[:runs_depth] for q, r in runs.items()},
+            {"experiment": experiment, "dataset": cfg["dataset"],
+             "corpus_size": len(dataset.corpus), "depth": runs_depth,
+             "qrels": {q: sorted(r) for q, r in dataset.qrels.items()}},
+        )
+        print(f"  순위 저장: {runs_path}", flush=True)
 
     timestamp = datetime.now(timezone.utc)
     # dense는 임베딩 캐시 히트 시 index_sec이 np.load 시간(~0.1s)이라

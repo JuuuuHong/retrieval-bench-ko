@@ -1,0 +1,15 @@
+experiment: sqa_full_kosroberta
+dataset:
+  name: ko-strategyqa
+  split: dev
+retriever:
+  type: dense
+  model: jhgan/ko-sroberta-multitask
+  batch_size: 64
+eval:
+  k:
+  - 1
+  - 5
+  - 10
+  - 100
+  save_runs: 1000

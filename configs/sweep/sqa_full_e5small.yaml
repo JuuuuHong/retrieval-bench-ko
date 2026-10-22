@@ -1,0 +1,17 @@
+experiment: sqa_full_e5small
+dataset:
+  name: ko-strategyqa
+  split: dev
+retriever:
+  type: dense
+  model: intfloat/multilingual-e5-small
+  query_prefix: 'query: '
+  passage_prefix: 'passage: '
+  batch_size: 64
+eval:
+  k:
+  - 1
+  - 5
+  - 10
+  - 100
+  save_runs: 1000

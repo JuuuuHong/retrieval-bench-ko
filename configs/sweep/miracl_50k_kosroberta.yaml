@@ -1,0 +1,17 @@
+experiment: miracl_50k_kosroberta
+dataset:
+  name: miracl-ko
+  split: dev
+  corpus_sample: 50000
+  seed: 42
+retriever:
+  type: dense
+  model: jhgan/ko-sroberta-multitask
+  batch_size: 64
+eval:
+  k:
+  - 1
+  - 5
+  - 10
+  - 100
+  save_runs: 1000
